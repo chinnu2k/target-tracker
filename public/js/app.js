@@ -1,38 +1,41 @@
 let weekData = [];
 
-function loadGoals(){
- fetch("/api/goals").then(r=>r.json()).then(d=>{
-  goals.innerHTML="";
-  d.forEach(g=>{
-    goals.innerHTML+=`
-     <button class="list-group-item list-group-item-action d-flex justify-content-between">
-      ${g.title}
-      <span>
-        <button class="btn btn-success btn-sm" onclick="markDone('${g._id}')">Done</button>
-      </span>
-     </button>`;
-  });
+async function loadGoals(){
+ const goalsData = await fetch("/api/goals").then(r=>r.json());
+ const today = new Date().toISOString().slice(0,10);
+ const prog = await fetch("/api/progress/all").then(r=>r.json());
+
+ goals.innerHTML="";
+ goalsData.forEach(g=>{
+  const doneToday = prog.find(p=>p.goalId===g._id && p.date===today);
+  goals.innerHTML+=`
+   <div class="list-group-item d-flex justify-content-between ${doneToday?'list-group-item-success':''}">
+    ${g.title}
+    <button class="btn btn-sm ${doneToday?'btn-secondary':'btn-success'}"
+     onclick="markDone('${g._id}')" ${doneToday?'disabled':''}>
+     ${doneToday?'Done':'Mark Done'}
+    </button>
+   </div>`;
  });
- loadWeek();
+ loadWeek(prog);
 }
+
 
 function markDone(id){
  fetch("/api/progress",{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({goalId:id,date:new Date().toISOString().slice(0,10),completed:1,total:1})})
- .then(()=>loadWeek());
+ body:JSON.stringify({goalId:id, date:new Date().toISOString().slice(0,10)})})
+ .then(()=>loadGoals());
 }
 
-function loadWeek(){
- fetch("/api/progress/all")
- .then(r=>r.json())
- .then(data=>{
-   let counts = {};
-   data.forEach(p=>{
-     counts[p.date] = (counts[p.date]||0)+p.completed;
-   });
-   drawChart(Object.keys(counts),Object.values(counts));
+
+function loadWeek(data){
+ let counts = {};
+ data.forEach(p=>{
+  if(p.done) counts[p.date] = (counts[p.date]||0)+1;
  });
+ drawChart(Object.keys(counts),Object.values(counts));
 }
+
 
 function drawChart(labels,data){
  new Chart(document.getElementById("weekChart"),{

@@ -12,9 +12,18 @@ router.get("/goals", async (req,res)=>{
 });
 
 router.post("/progress", async (req,res)=>{
-  const p = await Progress.create(req.body);
+  const {goalId, date} = req.body;
+
+  let p = await Progress.findOne({goalId, date});
+  if(p){
+    p.done = true;
+    await p.save();
+  } else {
+    p = await Progress.create({goalId, date, done:true});
+  }
   res.json(p);
 });
+
 
 router.get("/progress/:id", async (req,res)=>{
   res.json(await Progress.find({goalId:req.params.id}));
@@ -23,5 +32,6 @@ router.get("/progress/:id", async (req,res)=>{
 router.get("/progress/all", async (req,res)=>{
   res.json(await Progress.find());
 });
+
 
 module.exports = router;

@@ -20,4 +20,8 @@ router.get("/progress/:id", async (req,res)=>{
   res.json(await Progress.find({goalId:req.params.id}));
 });
 
+router.get("/progress/all", async (req,res)=>{
+  res.json(await Progress.find());
+});
+
 module.exports = router;
